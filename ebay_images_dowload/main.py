@@ -65,20 +65,22 @@ class EbayDownload:
                     print("{}{} ({})".format(tabs, category.CategoryName, category.CategoryID))
                     self._recur_category(category.CategoryID, tabs)
 
-    def download_product_image(self, searchResult):
+    def download_product_image(self, searchResult, path='.'):
+        save_dir = os.path.join(os.path.expanduser(path), 'download_image')
+        os.makedirs(save_dir, exist_ok=True)
+
         chunks = lambda lst: [(yield lst[i:i + 20]) for i in range(0, len(lst), 20)]
 
-        def _download_image(ebay_product, path='.'):
+        def _download_image(ebay_product):
             item_id = ebay_product.ItemID
-            image_urls = ebay_product.PictureURL
-            save_dir = os.path.join(os.path.expanduser(path), 'download_image')
-            os.makedirs(save_dir, exist_ok=True)
-            for i, image_url in enumerate(image_urls):
-                img_data = requests.get(image_url).content
-                basename = str(item_id) + '_' + str(i+1) + '.jpg'
-                save_path = os.path.join(save_dir, basename)
-                with open(save_path, 'wb') as handler:
-                    handler.write(img_data)
+            if ebay_product.get('PictureURL'):
+                image_urls = ebay_product.PictureURL
+                for i, image_url in enumerate(image_urls):
+                    img_data = requests.get(image_url).content
+                    basename = str(item_id) + '_' + str(i+1) + '.jpg'
+                    save_path = os.path.join(save_dir, basename)
+                    with open(save_path, 'wb') as handler:
+                        handler.write(img_data)
 
         items = searchResult.item
         for item_list in chunks(items):
@@ -94,6 +96,6 @@ class EbayDownload:
 if __name__ == '__main__':
     ebay = EbayDownload()
 
-    searchResult = ebay.search_category(categoryId=246, pageNumber=3)
+    searchResult = ebay.search_category(categoryId=220, pageNumber=3)
     ebay.download_product_image(searchResult)
 
